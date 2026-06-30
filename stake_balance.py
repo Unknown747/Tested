@@ -16,5 +16,5 @@ r = requests.post(
     timeout=10,
 )
 
-print(r.status_code)
-print(r.json())
+print("Status:", r.status_code)
+print("Response:", r.text[:500])
