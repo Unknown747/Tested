@@ -1,37 +1,6 @@
-import requests
+import requests, json
 
 TOKEN = "edd0aade282af360a96023fdb4037702918585c2ee236b60c5e5f8f2b03bc2ccf0788b8cff2d3b041561fd5248d60588"
-
-query = """
-query UserFull {
-  user {
-    id
-    name
-    email
-    createdAt
-    preferredCurrency
-    vipLevel {
-      id
-      level
-      name
-      nextLevel {
-        name
-        requiredXp
-      }
-    }
-    xpTotal
-    xpThisWeek
-    totalBets
-    totalWagered
-    activeWallet { amount currency }
-    balances {
-      available { amount currency }
-      vault     { amount currency }
-      bonus     { amount currency }
-    }
-  }
-}
-"""
 
 headers = {
     "Content-Type": "application/json",
@@ -50,12 +19,43 @@ headers = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-r = requests.post(
-    "https://stake.com/_api/graphql",
-    headers=headers,
-    json={"query": query, "operationName": "UserFull", "variables": {}},
-    timeout=10,
-)
+def q(query, op="Test"):
+    r = requests.post(
+        "https://stake.com/_api/graphql",
+        headers=headers,
+        json={"query": query, "operationName": op, "variables": {}},
+        timeout=10,
+    )
+    return r.json()
 
-import json
-print(json.dumps(r.json(), indent=2))
+# Probe 1: field dasar user yang valid
+res = q("""
+query Test {
+  user {
+    id name email createdAt
+    rakeback { id level name }
+    vip { id level name }
+    tier { id level name }
+    bets { id }
+  }
+}
+""")
+print("=== PROBE 1 (rakeback/vip/tier/bets) ===")
+print(json.dumps(res.get("errors", res.get("data")), indent=2))
+print()
+
+# Probe 2: statistik wagering
+res2 = q("""
+query Test {
+  user {
+    statistic {
+      bets wins losses wagered
+    }
+    wager { amount currency }
+    totalWager
+    weeklyWager
+  }
+}
+""")
+print("=== PROBE 2 (statistic/wager) ===")
+print(json.dumps(res2.get("errors", res2.get("data")), indent=2))
