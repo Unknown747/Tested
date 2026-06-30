@@ -7,10 +7,9 @@ query UserBalance {
   user {
     name
     balances {
-      available {
-        amount
-        currency
-      }
+      available { amount currency }
+      vault     { amount currency }
+      bonus     { amount currency }
     }
   }
 }
@@ -33,24 +32,29 @@ headers = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-endpoints = [
+r = requests.post(
     "https://stake.com/_api/graphql",
-    "https://api.stake.com/api/graphql",
-    "https://stake.com/graphql",
-    "https://api.stake.com/graphql",
-]
+    headers=headers,
+    json={"query": query, "operationName": "UserBalance", "variables": {}},
+    timeout=10,
+)
 
-payload = {
-    "operationName": "UserBalance",
-    "variables": {},
-    "query": query,
-}
+data = r.json()
+user = data["data"]["user"]
 
-for url in endpoints:
-    try:
-        r = requests.post(url, headers=headers, json=payload, timeout=10)
-        print(f"[{r.status_code}] {url}")
-        print("  ", r.text[:200])
-    except Exception as e:
-        print(f"[ERR] {url} -> {e}")
-    print()
+print(f"Username : {user['name']}")
+print()
+
+has_balance = False
+for b in user["balances"]:
+    available = float(b["available"]["amount"] or 0)
+    vault     = float(b["vault"]["amount"] or 0)
+    bonus     = float(b["bonus"]["amount"] or 0)
+    currency  = b["available"]["currency"].upper()
+
+    if available or vault or bonus:
+        has_balance = True
+        print(f"  {currency:<6}  available={available:.8f}  vault={vault:.8f}  bonus={bonus:.8f}")
+
+if not has_balance:
+    print("  Semua saldo 0")
