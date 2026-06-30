@@ -3,9 +3,27 @@ import requests
 TOKEN = "edd0aade282af360a96023fdb4037702918585c2ee236b60c5e5f8f2b03bc2ccf0788b8cff2d3b041561fd5248d60588"
 
 query = """
-query UserBalance {
+query UserFull {
   user {
+    id
     name
+    email
+    createdAt
+    preferredCurrency
+    vipLevel {
+      id
+      level
+      name
+      nextLevel {
+        name
+        requiredXp
+      }
+    }
+    xpTotal
+    xpThisWeek
+    totalBets
+    totalWagered
+    activeWallet { amount currency }
     balances {
       available { amount currency }
       vault     { amount currency }
@@ -35,26 +53,9 @@ headers = {
 r = requests.post(
     "https://stake.com/_api/graphql",
     headers=headers,
-    json={"query": query, "operationName": "UserBalance", "variables": {}},
+    json={"query": query, "operationName": "UserFull", "variables": {}},
     timeout=10,
 )
 
-data = r.json()
-user = data["data"]["user"]
-
-print(f"Username : {user['name']}")
-print()
-
-has_balance = False
-for b in user["balances"]:
-    available = float(b["available"]["amount"] or 0)
-    vault     = float(b["vault"]["amount"] or 0)
-    bonus     = float(b["bonus"]["amount"] or 0)
-    currency  = b["available"]["currency"].upper()
-
-    if available or vault or bonus:
-        has_balance = True
-        print(f"  {currency:<6}  available={available:.8f}  vault={vault:.8f}  bonus={bonus:.8f}")
-
-if not has_balance:
-    print("  Semua saldo 0")
+import json
+print(json.dumps(r.json(), indent=2))
