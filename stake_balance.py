@@ -21,12 +21,20 @@ headers = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-r = requests.post(
+endpoints = [
     "https://stake.com/graphql",
-    headers=headers,
-    json={"query": query},
-    timeout=10,
-)
+    "https://stake.com/api/graphql",
+    "https://api.stake.com/graphql",
+    "https://api.stake.com/",
+]
 
-print("Status:", r.status_code)
-print("Response:", r.text[:500])
+payload = {"query": query}
+
+for url in endpoints:
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=10)
+        print(f"[{r.status_code}] POST {url}")
+        print("       ", r.text[:120])
+    except Exception as e:
+        print(f"[ERR] {url} -> {e}")
+    print()
