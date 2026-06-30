@@ -18,13 +18,15 @@ import requests
 # Konfigurasi
 # ---------------------------------------------------------------------------
 
-STAKE_GRAPHQL_URL = "https://api.stake.com/graphql"
+STAKE_GRAPHQL_URL = "https://stake.com/graphql"
 
 HEADERS_BASE = {
     "Content-Type": "application/json",
     "Accept": "application/json",
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "x-language": "en",
+    "Origin": "https://stake.com",
+    "Referer": "https://stake.com/",
 }
 
 # Query GraphQL untuk ambil semua saldo
@@ -80,13 +82,15 @@ query Balances {
 # Fungsi utama
 # ---------------------------------------------------------------------------
 
-def fetch_balance(token: str, verbose: bool = False) -> dict:
+def fetch_balance(token: str, cookie: str = "", verbose: bool = False) -> dict:
     """Kirim request GraphQL ke Stake dan kembalikan data saldo."""
 
     headers = {
         **HEADERS_BASE,
         "x-access-token": token,
     }
+    if cookie:
+        headers["Cookie"] = cookie
 
     payload = {
         "query": WALLET_QUERY,
@@ -178,6 +182,11 @@ def main():
         help="API / session token Stake (atau set env STAKE_TOKEN)",
     )
     parser.add_argument(
+        "--cookie", "-c",
+        default=os.environ.get("STAKE_COOKIE", ""),
+        help="Cookie browser (cf_clearance=xxx; session=yyy) — diperlukan karena Cloudflare",
+    )
+    parser.add_argument(
         "--verbose", "-v",
         action="store_true",
         help="Tampilkan response mentah untuk debugging",
@@ -196,7 +205,7 @@ def main():
         sys.exit(1)
 
     try:
-        data = fetch_balance(args.token, verbose=args.verbose)
+        data = fetch_balance(args.token, cookie=args.cookie, verbose=args.verbose)
 
         if args.json:
             print(json.dumps(data, indent=2))
